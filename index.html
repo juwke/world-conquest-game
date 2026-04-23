@@ -5,114 +5,43 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            background-color: #121212; 
-            color: white; 
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-            margin: 0; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            height: 100vh;
-        }
-        .header { 
-            margin: 20px; 
-            text-align: center; 
-            flex-shrink: 0;
-        }
-        .header h2 { margin: 0 0 5px 0; color: #00d1ff; }
-        .header p { margin: 0; font-size: 1.1em; opacity: 0.8; }
-        
-        #map-container { 
-            width: 95vw; 
-            flex-grow: 1;
-            background: #1e1e1e; 
-            border-radius: 20px; 
-            border: 2px solid #333; 
-            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
-            margin-bottom: 20px;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        svg { 
-            width: 100%; 
-            height: 100%; 
-            /* Смещение для центрирования карты */
-            transform: translate(0, 10px); 
-        }
-        
-        .region { 
-            fill: #3a3a3a; 
-            stroke: #121212; 
-            stroke-width: 0.7; 
-            transition: fill 0.3s, stroke-width 0.3s; 
-            cursor: pointer;
-        }
-        
-        .region:hover {
-            fill: #555;
-            stroke-width: 1.5;
-            stroke: #fff;
-        }
-
-        .captured { 
-            fill: #00d1ff !important; 
-            stroke: #fff; 
-            stroke-width: 1;
-        }
+        body { background: #0f0f0f; color: #00ff00; font-family: monospace; text-align: center; margin: 0; padding: 20px; }
+        #map-container { width: 100%; height: 300px; background: #1a1a1a; border: 2px solid #00ff00; margin-top: 20px; position: relative; }
+        .region { fill: #333; stroke: #00ff00; stroke-width: 1; transition: 0.2s; }
+        .captured { fill: #00ff00 !important; }
+        .version-tag { font-size: 10px; color: #555; margin-top: 10px; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2 id="user-name">Завоеватель</h2>
-        <p>Под контролем: <span id="score">0</span> / 10 зон</p>
-    </div>
+    <h2 style="color: #00ff00;">STRATEGY v2.0</h2>
+    <p>Захвачено: <span id="score">0</span> / 10</p>
 
     <div id="map-container">
-        <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid meet">
-            <path id="reg_na" class="region" d="M10,10 L70,10 L75,50 L50,70 L20,60 Z" onclick="claim(this)" />
-            <path id="reg_sa" class="region" d="M55,75 L85,75 L80,130 L60,130 L50,100 Z" onclick="claim(this)" />
-            <path id="reg_eu" class="region" d="M90,15 L140,15 L145,55 L110,60 L95,45 Z" onclick="claim(this)" />
-            <path id="reg_af" class="region" d="M95,65 L135,65 L150,110 L120,135 L90,110 Z" onclick="claim(this)" />
-            <path id="reg_nas" class="region" d="M145,10 L230,12 L235,50 L150,45 Z" onclick="claim(this)" />
-            <path id="reg_cas" class="region" d="M150,50 L200,55 L210,90 L160,95 L150,80 Z" onclick="claim(this)" />
-            <path id="reg_eas" class="region" d="M205,55 L240,60 L245,100 L215,105 Z" onclick="claim(this)" />
-            <path id="reg_me" class="region" d="M135,60 L160,60 L165,85 L140,90 Z" onclick="claim(this)" />
-            <path id="reg_sea" class="region" d="M210,100 L250,110 L245,140 L220,135 Z" onclick="claim(this)" />
-            <path id="reg_aus" class="region" d="M230,120 L270,125 L265,145 L235,145 Z" onclick="claim(this)" />
+        <svg viewBox="0 0 300 150">
+            <rect id="r1" class="region" x="10" y="10" width="40" height="40" onclick="claim(this)" />
+            <rect id="r2" class="region" x="60" y="10" width="40" height="40" onclick="claim(this)" />
+            <rect id="r3" class="region" x="110" y="10" width="40" height="40" onclick="claim(this)" />
+            <rect id="r4" class="region" x="10" y="60" width="40" height="40" onclick="claim(this)" />
+            <rect id="r5" class="region" x="60" y="60" width="40" height="40" onclick="claim(this)" />
+            <rect id="r6" class="region" x="110" y="60" width="40" height="40" onclick="claim(this)" />
+            <rect id="r7" class="region" x="160" y="10" width="40" height="90" onclick="claim(this)" />
+            <rect id="r8" class="region" x="210" y="10" width="80" height="40" onclick="claim(this)" />
+            <rect id="r9" class="region" x="210" y="60" width="35" height="40" onclick="claim(this)" />
+            <rect id="r10" class="region" x="255" y="60" width="35" height="40" onclick="claim(this)" />
         </svg>
     </div>
+    <div class="version-tag">Build: 2026-04-23_A</div>
 
     <script>
-        // Инициализация Telegram Web App API
         const tg = window.Telegram.WebApp;
-        tg.expand(); // Развернуть приложение на весь экран
-        
+        tg.expand();
         let score = 0;
-        
-        // Попытка получить имя пользователя из Telegram
-        if (tg.initDataUnsafe.user) {
-            document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
-        }
-
-        // Функция захвата территории
         function claim(el) {
-            // Проверяем, не захвачена ли уже
             if (!el.classList.contains('captured')) {
-                // Добавляем класс захвата (меняет цвет)
                 el.classList.add('captured');
-                // Увеличиваем счет
                 score++;
                 document.getElementById('score').innerText = score;
-                
-                // Виброотклик (если поддерживается)
-                if (tg.HapticFeedback) {
-                    tg.HapticFeedback.impactOccurred('light');
-                }
+                tg.HapticFeedback.impactOccurred('medium');
             }
         }
     </script>
