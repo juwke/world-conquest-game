@@ -5,45 +5,114 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background-color: #121212; color: white; font-family: sans-serif; margin: 0; overflow: hidden; display: flex; flex-direction: column; align-items: center; }
-        .header { margin: 20px; text-align: center; }
-        #map-container { width: 95vw; height: 60vh; background: #1e1e1e; border-radius: 15px; border: 2px solid #333; position: relative; }
-        svg { width: 100%; height: 100%; }
-        .country { fill: #3a3a3a; stroke: #121212; stroke-width: 1; transition: fill 0.3s; }
-        .captured { fill: #00d1ff; stroke: #fff; }
-        .btn-attack { margin-top: 20px; padding: 15px 30px; background: #0088cc; border: none; border-radius: 10px; color: white; font-weight: bold; font-size: 16px; }
+        body { 
+            background-color: #121212; 
+            color: white; 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            margin: 0; 
+            overflow: hidden; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            height: 100vh;
+        }
+        .header { 
+            margin: 20px; 
+            text-align: center; 
+            flex-shrink: 0;
+        }
+        .header h2 { margin: 0 0 5px 0; color: #00d1ff; }
+        .header p { margin: 0; font-size: 1.1em; opacity: 0.8; }
+        
+        #map-container { 
+            width: 95vw; 
+            flex-grow: 1;
+            background: #1e1e1e; 
+            border-radius: 20px; 
+            border: 2px solid #333; 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+            margin-bottom: 20px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        svg { 
+            width: 100%; 
+            height: 100%; 
+            /* Смещение для центрирования карты */
+            transform: translate(0, 10px); 
+        }
+        
+        .region { 
+            fill: #3a3a3a; 
+            stroke: #121212; 
+            stroke-width: 0.7; 
+            transition: fill 0.3s, stroke-width 0.3s; 
+            cursor: pointer;
+        }
+        
+        .region:hover {
+            fill: #555;
+            stroke-width: 1.5;
+            stroke: #fff;
+        }
+
+        .captured { 
+            fill: #00d1ff !important; 
+            stroke: #fff; 
+            stroke-width: 1;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h2 id="user-name">Завоеватель</h2>
-        <p>Территорий под контролем: <span id="score">0</span></p>
+        <p>Под контролем: <span id="score">0</span> / 10 зон</p>
     </div>
 
     <div id="map-container">
-        <svg viewBox="0 0 200 120">
-            <path id="reg1" class="country" d="M10,10 L50,10 L45,40 L15,35 Z" onclick="claim(this)" />
-            <path id="reg2" class="country" d="M55,15 L90,12 L95,45 L50,42 Z" onclick="claim(this)" />
-            <path id="reg3" class="country" d="M20,45 L45,45 L40,80 L10,75 Z" onclick="claim(this)" />
-            <path id="reg4" class="country" d="M100,20 L140,25 L135,60 L95,55 Z" onclick="claim(this)" />
+        <svg viewBox="0 0 300 150" preserveAspectRatio="xMidYMid meet">
+            <path id="reg_na" class="region" d="M10,10 L70,10 L75,50 L50,70 L20,60 Z" onclick="claim(this)" />
+            <path id="reg_sa" class="region" d="M55,75 L85,75 L80,130 L60,130 L50,100 Z" onclick="claim(this)" />
+            <path id="reg_eu" class="region" d="M90,15 L140,15 L145,55 L110,60 L95,45 Z" onclick="claim(this)" />
+            <path id="reg_af" class="region" d="M95,65 L135,65 L150,110 L120,135 L90,110 Z" onclick="claim(this)" />
+            <path id="reg_nas" class="region" d="M145,10 L230,12 L235,50 L150,45 Z" onclick="claim(this)" />
+            <path id="reg_cas" class="region" d="M150,50 L200,55 L210,90 L160,95 L150,80 Z" onclick="claim(this)" />
+            <path id="reg_eas" class="region" d="M205,55 L240,60 L245,100 L215,105 Z" onclick="claim(this)" />
+            <path id="reg_me" class="region" d="M135,60 L160,60 L165,85 L140,90 Z" onclick="claim(this)" />
+            <path id="reg_sea" class="region" d="M210,100 L250,110 L245,140 L220,135 Z" onclick="claim(this)" />
+            <path id="reg_aus" class="region" d="M230,120 L270,125 L265,145 L235,145 Z" onclick="claim(this)" />
         </svg>
     </div>
 
     <script>
+        // Инициализация Telegram Web App API
         const tg = window.Telegram.WebApp;
-        tg.expand();
+        tg.expand(); // Развернуть приложение на весь экран
         
         let score = 0;
+        
+        // Попытка получить имя пользователя из Telegram
         if (tg.initDataUnsafe.user) {
             document.getElementById('user-name').innerText = tg.initDataUnsafe.user.first_name;
         }
 
+        // Функция захвата территории
         function claim(el) {
+            // Проверяем, не захвачена ли уже
             if (!el.classList.contains('captured')) {
+                // Добавляем класс захвата (меняет цвет)
                 el.classList.add('captured');
+                // Увеличиваем счет
                 score++;
                 document.getElementById('score').innerText = score;
-                tg.HapticFeedback.notificationOccurred('success');
+                
+                // Виброотклик (если поддерживается)
+                if (tg.HapticFeedback) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
             }
         }
     </script>
