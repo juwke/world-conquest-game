@@ -5,92 +5,70 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { 
-            background: #111; 
-            color: #eee; 
-            font-family: 'Segoe UI', system-ui, sans-serif; 
-            margin: 0; 
-            overflow: hidden; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            height: 100vh;
-        }
-        .header { margin: 15px; text-align: center; }
-        .header h2 { margin: 0; color: #00d1ff; text-transform: uppercase; }
-        .stat-bar { margin-top: 5px; opacity: 0.8; }
+        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; margin: 0; text-align: center; overflow: hidden; }
+        .header { padding: 10px; background: #161b22; border-bottom: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
+        h2 { margin: 0; font-size: 18px; color: #58a6ff; }
         
-        #map-container { 
-            width: 100vw; 
-            flex-grow: 1; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center; 
-            background: #1a1a1a; 
-            border-top: 1px solid #333; 
-        }
+        #map-container { width: 100vw; height: 70vh; display: flex; align-items: center; justify-content: center; padding: 5px; }
         
-        svg { 
-            width: 95%; 
-            height: 95%; 
-            /* Смещение для лучшего отображения на телефоне */
-            transform: translate(0, 10px); 
-        }
+        /* Стили для настоящей карты */
+        svg { width: 100%; height: auto; transition: transform 0.3s; }
+        .region { fill: #21262d; stroke: #0d1117; stroke-width: 0.4; transition: 0.2s; cursor: pointer; }
+        .region:hover { fill: #30363d; stroke: #8b949e; }
         
-        .land { 
-            fill: #3a3a3a; 
-            stroke: #111; 
-            stroke-width: 0.5; 
-            transition: all 0.2s; 
-            cursor: pointer;
-        }
+        /* Цвет захвата (как на твоем референсе - бежево-коричневый или современный голубой) */
+        .captured { fill: #1f6feb !important; stroke: #58a6ff !important; filter: drop-shadow(0 0 3px #58a6ff); }
         
-        .land:hover { fill: #555; stroke: #fff; stroke-width: 1; }
-        
-        .captured { 
-            fill: #00d1ff !important; 
-            stroke: #fff; 
-            stroke-width: 1;
-        }
+        .footer { position: fixed; bottom: 20px; width: 100%; }
+        .stats { background: rgba(22, 27, 34, 0.9); padding: 10px 20px; border-radius: 20px; border: 1px solid #30363d; display: inline-block; }
     </style>
 </head>
 <body>
     <div class="header">
-        <h2>Доминация Мира</h2>
-        <div class="stat-bar">Захвачено: <span id="score">0</span> / 15 территорий</div>
+        <h2>ГЛОБАЛЬНАЯ ЭКСПАНСИЯ</h2>
     </div>
 
     <div id="map-container">
-        <svg viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid meet">
-            <path id="reg1" class="land" d="M120,40 L300,45 L280,100 L110,95 Z" onclick="claim(this)"/>
-            <path id="reg2" class="land" d="M120,100 L320,105 L310,180 L130,175 Z" onclick="claim(this)"/>
-            <path id="reg3" class="land" d="M160,180 L280,185 L260,250 L200,240 Z" onclick="claim(this)"/>
-            <path id="reg4" class="land" d="M250,260 L350,265 L330,350 L260,340 Z" onclick="claim(this)"/>
-            <path id="reg5" class="land" d="M260,350 L340,360 L300,550 L260,530 Z" onclick="claim(this)"/>
-            <path id="reg6" class="land" d="M430,100 L530,100 L530,190 L430,190 Z" onclick="claim(this)"/>
-            <path id="reg7" class="land" d="M530,90 L630,90 L630,180 L530,180 Z" onclick="claim(this)"/>
-            <path id="reg8" class="land" d="M430,200 L560,205 L540,300 L440,300 Z" onclick="claim(this)"/>
-            <path id="reg9" class="land" d="M470,305 L550,310 L530,500 L470,480 Z" onclick="claim(this)"/>
-            <path id="reg10" class="land" d="M600,50 L850,55 L830,150 L610,145 Z" onclick="claim(this)"/>
-            <path id="reg11" class="land" d="M600,150 L750,155 L740,250 L610,245 Z" onclick="claim(this)"/>
-            <path id="reg12" class="land" d="M800,100 L950,110 L930,220 L800,210 Z" onclick="claim(this)"/>
-            <path id="reg13" class="land" d="M570,185 L650,190 L640,260 L570,260 Z" onclick="claim(this)"/>
-            <path id="reg14" class="land" d="M750,250 L900,260 L880,400 L750,380 Z" onclick="claim(this)"/>
-            <path id="reg15" class="land" d="M800,410 L940,420 L920,550 L800,530 Z" onclick="claim(this)"/>
+        <svg viewBox="0 0 1000 500">
+            <g id="regions">
+                <path id="reg_1" class="region" d="M100,50 L250,50 L270,150 L120,160 Q100,100 100,50" onclick="claim(this)" />
+                <path id="reg_2" class="region" d="M120,160 L300,170 L280,240 L150,230 Z" onclick="claim(this)" />
+                
+                <path id="reg_3" class="region" d="M250,250 L350,260 L300,480 L230,350 Z" onclick="claim(this)" />
+                
+                <path id="reg_4" class="region" d="M350,20 L450,30 L420,80 L340,70 Z" onclick="claim(this)" />
+                
+                <path id="reg_5" class="region" d="M450,80 L550,85 L540,160 L460,160 Z" onclick="claim(this)" />
+                
+                <path id="reg_6" class="region" d="M460,170 L580,180 L550,450 L440,300 Z" onclick="claim(this)" />
+                
+                <path id="reg_7" class="region" d="M550,50 L650,55 L640,130 L550,130 Z" onclick="claim(this)" />
+                <path id="reg_8" class="region" d="M650,50 L850,60 L830,140 L650,140 Z" onclick="claim(this)" />
+                
+                <path id="reg_9" class="region" d="M600,150 L800,160 L750,300 L580,280 Z" onclick="claim(this)" />
+                
+                <path id="reg_10" class="region" d="M550,180 L620,185 L610,250 L560,240 Z" onclick="claim(this)" />
+                
+                <path id="reg_11" class="region" d="M750,350 L900,360 L880,480 L760,470 Z" onclick="claim(this)" />
+                
+                <circle id="reg_12" class="region" cx="850" cy="200" r="20" onclick="claim(this)" /> <path id="reg_13" class="region" d="M150,30 L200,20 L220,40 Z" onclick="claim(this)" /> <path id="reg_14" class="region" d="M680,310 L730,310 L720,350 L680,350 Z" onclick="claim(this)" /> <path id="reg_15" class="region" d="M400,100 L430,100 L430,140 L400,140 Z" onclick="claim(this)" /> </g>
         </svg>
+    </div>
+
+    <div class="footer">
+        <div class="stats">Захвачено: <span id="score" style="color:#58a6ff; font-weight:bold;">0</span> / 15</div>
     </div>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
         let score = 0;
-        
         function claim(el) {
             if (!el.classList.contains('captured')) {
                 el.classList.add('captured');
                 score++;
                 document.getElementById('score').innerText = score;
-                tg.HapticFeedback.impactOccurred('light');
+                tg.HapticFeedback.notificationOccurred('success');
             }
         }
     </script>
