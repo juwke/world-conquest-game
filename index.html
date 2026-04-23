@@ -5,72 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { background: #0d1117; color: #c9d1d9; font-family: -apple-system, sans-serif; margin: 0; text-align: center; overflow: hidden; }
-        .header { padding: 10px; background: #161b22; border-bottom: 1px solid #30363d; box-shadow: 0 4px 10px rgba(0,0,0,0.3); }
-        h2 { margin: 0; font-size: 18px; color: #58a6ff; }
-        
-        #map-container { width: 100vw; height: 70vh; display: flex; align-items: center; justify-content: center; padding: 5px; }
-        
-        /* Стили для настоящей карты */
-        svg { width: 100%; height: auto; transition: transform 0.3s; }
-        .region { fill: #21262d; stroke: #0d1117; stroke-width: 0.4; transition: 0.2s; cursor: pointer; }
-        .region:hover { fill: #30363d; stroke: #8b949e; }
-        
-        /* Цвет захвата (как на твоем референсе - бежево-коричневый или современный голубой) */
-        .captured { fill: #1f6feb !important; stroke: #58a6ff !important; filter: drop-shadow(0 0 3px #58a6ff); }
-        
-        .footer { position: fixed; bottom: 20px; width: 100%; }
-        .stats { background: rgba(22, 27, 34, 0.9); padding: 10px 20px; border-radius: 20px; border: 1px solid #30363d; display: inline-block; }
+        body { background: #050505; color: #00d1ff; font-family: 'Courier New', monospace; margin: 0; overflow: hidden; text-align: center; }
+        canvas { background: #0a0a0a; display: block; margin: 0 auto; touch-action: none; }
+        .ui-panel { position: fixed; top: 10px; width: 100%; pointer-events: none; }
+        .stats { background: rgba(0, 0, 0, 0.8); padding: 10px; border: 1px solid #00d1ff; display: inline-block; pointer-events: auto; border-radius: 5px; }
+        .controls { position: fixed; bottom: 20px; width: 100%; }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h2>ГЛОБАЛЬНАЯ ЭКСПАНСИЯ</h2>
+    <div class="ui-panel">
+        <div class="stats">
+            ЗОН ЗАХВАЧЕНО: <span id="score">0</span> / 1000
+        </div>
     </div>
 
-    <div id="map-container">
-        <svg viewBox="0 0 1000 500">
-            <g id="regions">
-                <path id="reg_1" class="region" d="M100,50 L250,50 L270,150 L120,160 Q100,100 100,50" onclick="claim(this)" />
-                <path id="reg_2" class="region" d="M120,160 L300,170 L280,240 L150,230 Z" onclick="claim(this)" />
-                
-                <path id="reg_3" class="region" d="M250,250 L350,260 L300,480 L230,350 Z" onclick="claim(this)" />
-                
-                <path id="reg_4" class="region" d="M350,20 L450,30 L420,80 L340,70 Z" onclick="claim(this)" />
-                
-                <path id="reg_5" class="region" d="M450,80 L550,85 L540,160 L460,160 Z" onclick="claim(this)" />
-                
-                <path id="reg_6" class="region" d="M460,170 L580,180 L550,450 L440,300 Z" onclick="claim(this)" />
-                
-                <path id="reg_7" class="region" d="M550,50 L650,55 L640,130 L550,130 Z" onclick="claim(this)" />
-                <path id="reg_8" class="region" d="M650,50 L850,60 L830,140 L650,140 Z" onclick="claim(this)" />
-                
-                <path id="reg_9" class="region" d="M600,150 L800,160 L750,300 L580,280 Z" onclick="claim(this)" />
-                
-                <path id="reg_10" class="region" d="M550,180 L620,185 L610,250 L560,240 Z" onclick="claim(this)" />
-                
-                <path id="reg_11" class="region" d="M750,350 L900,360 L880,480 L760,470 Z" onclick="claim(this)" />
-                
-                <circle id="reg_12" class="region" cx="850" cy="200" r="20" onclick="claim(this)" /> <path id="reg_13" class="region" d="M150,30 L200,20 L220,40 Z" onclick="claim(this)" /> <path id="reg_14" class="region" d="M680,310 L730,310 L720,350 L680,350 Z" onclick="claim(this)" /> <path id="reg_15" class="region" d="M400,100 L430,100 L430,140 L400,140 Z" onclick="claim(this)" /> </g>
-        </svg>
-    </div>
-
-    <div class="footer">
-        <div class="stats">Захвачено: <span id="score" style="color:#58a6ff; font-weight:bold;">0</span> / 15</div>
-    </div>
+    <canvas id="gameCanvas"></canvas>
 
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreEl = document.getElementById('score');
+
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        const ROWS = 40; 
+        const COLS = 25; // Итого 1000 плиток
+        const cells = [];
         let score = 0;
-        function claim(el) {
-            if (!el.classList.contains('captured')) {
-                el.classList.add('captured');
-                score++;
-                document.getElementById('score').innerText = score;
-                tg.HapticFeedback.notificationOccurred('success');
+
+        // Инициализация сетки
+        const cellW = canvas.width / COLS;
+        const cellH = canvas.height / ROWS;
+
+        for (let r = 0; r < ROWS; r++) {
+            for (let c = 0; c < COLS; c++) {
+                cells.push({
+                    x: c * cellW,
+                    y: r * cellH,
+                    captured: false,
+                    color: '#1a1a1a'
+                });
             }
         }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            cells.forEach(cell => {
+                ctx.fillStyle = cell.captured ? '#00d1ff' : '#1a1a1a';
+                ctx.strokeStyle = '#333';
+                ctx.fillRect(cell.x, cell.y, cellW, cellH);
+                ctx.strokeRect(cell.x, cell.y, cellW, cellH);
+            });
+        }
+
+        canvas.addEventListener('click', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            cells.forEach(cell => {
+                if (mouseX >= cell.x && mouseX <= cell.x + cellW &&
+                    mouseY >= cell.y && mouseY <= cell.y + cellH && !cell.captured) {
+                    cell.captured = true;
+                    score++;
+                    scoreEl.innerText = score;
+                    tg.HapticFeedback.impactOccurred('light');
+                    draw();
+                }
+            });
+        });
+
+        draw();
     </script>
 </body>
 </html>
